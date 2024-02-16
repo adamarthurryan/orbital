@@ -27,14 +27,30 @@ function init() {
     camera.position.set( 0, 0, 1e16 );
     camera.lookAt( 0, 0, 0 );
 
-    let bodyMeshes = bodies.map(body => ({body, mesh:createSphere(body.radius, body.position, 0xffffff)}));
+    let bodyMeshes = bodies.map(body => ({body, mesh:createSphere(body.radius, body.position(0), 0xffffff)}));
 
 
     for (const {_, mesh} of bodyMeshes) {
         scene.add(mesh);
     }
 
+    //time factor in days per second
+    let timeFactor = 1.0;
+    let secLast=new Date().getTime()/1000;
+    let t = 0;
     function animate() {
+        let secNext = new Date().getTime()/1000;
+        let interval = secNext - secLast;
+        t+=timeFactor*interval;
+        secLast=secNext;
+
+        //update body positions
+        for (const bodyMesh of bodyMeshes) {
+            const {body, mesh} = bodyMesh;
+            const position = body.position(t);
+            mesh.position.set(position.x, position.y, position.z);
+        }
+
         requestAnimationFrame( animate );
 
         renderer.render( scene, camera );
@@ -79,10 +95,20 @@ function init() {
         }
     
         camera.updateProjectionMatrix();
-    };
+    }
+
+    function keyPressListener(event) {
+        if (!event.repeat && event.key === ',') {
+            timeFactor /= 2;
+        }
+        else if (!event.repeat && event.key === '.') {
+            timeFactor *= 2;
+        }
+    }
 
     document.addEventListener('mousewheel', mouseWheelListener);
     document.addEventListener('mousemove', mouseMoveListener);
+    document.addEventListener('keydown', keyPressListener);
     animate();
     
 }

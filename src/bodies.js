@@ -1,57 +1,53 @@
 import { J2000, Vector3D } from "pious-squid";
 import getTenPcStars from "./the10pcsample";
+import * as Planets from './jplKeplerian.js'
 
 class Body {
-    constructor (name, radius, mass, position, velocity, parent=null) {
+    //position is a function from time to Vector3D
+    constructor (name, radius, mass, position) {
+        this.position = position;
         this.name = name;
         this.radius = radius;
-        this.position = position;
-        this.velocity = velocity;
         this.mass = mass;
-        this.parent = parent;
     }
 }
 
-//parallax is given in milli-arcseconds
-function parallaxToDistance(parallax) {
-    //distance in parsecs
-    let distanceParsec = 1/parallax;
-    let distanceKm = 1000*distanceParsec*3.086e13;
-    return distanceKm;
-}
-
-function igcsToXyz({ra, dec, parallax}) {
-    let rho = parallaxToDistance(parallax);
-    let x = rho * Math.sin(dec) * Math.cos(ra);
-    let y = rho * Math.sin(dec) * Math.sin(ra);
-    let z = rho * Math.cos(dec);
-    
-    return {x,y,z};
-}
+// a fixed position
+const fixed = (position) => (t) => position;
+// a constant velocity
+const constant = (p0, v) => (t) => p0.add(v.scale(t));
+// a position relative to another body
+const relative = (parent, position) => (t) => parent.position(t).add(position(t));
+// a keplerian orbit around the origin
 
 
-let sol = new Body("Sun", 696340, 1.989e30,                       new Vector3D(0, 0, 0), new Vector3D(0, 0, 0));
+
+
+
+let sol = new Body("Sun", 696340, 1.989e30,  fixed(new Vector3D(0,0,0)));
 
 let stars = [sol];
 
 let data = await getTenPcStars();
 for (const row of data) {
-    const {COMMON_NAME, RA, DEC, PARALLAX} = row;
-    const [name,ra,dec,parallax] = [COMMON_NAME, RA, DEC, PARALLAX];
-
-    const {x,y,z} = igcsToXyz({ra,dec,parallax})
-
-    const body = new Body (name, 10000, 0, new Vector3D(x,y,z), new Vector3D(0,0,0));
+    const name = row.common_name;
+    const body = new Body (name, 10000, 0, fixed(new Vector3D(row.x,row.y,row.z)));
 
     if (name && name.startsWith("Prox"))
-        console.log({name, x,y,z, dist:parallaxToDistance(parallax)});
+        console.log(row);
 
     stars.push(body);
 }
 
 let planets = [
-    new Body("Earth", 12756, 0, new Vector3D(1.496e8, 0, 0), new Vector3D(0, 0, 0), sol),
-    new Body("Mars", 6792, 0, new Vector3D(2.2279e8, 0, 0), new Vector3D(0, 0, 0), sol),
+    new Body("Mercury", 2439, 0, Planets.mercury),
+    new Body("Venus", 6052, 0, Planets.venus),
+    //new Body("Earth", 6371, 0, Planets.earth),
+    new Body("Mars", 3390, 0, Planets.mars),
+    new Body("Jupiter", 69911, 0, Planets.jupiter),
+    new Body("Saturn", 58232, 0, Planets.saturn),
+    new Body("Uranus", 25362, 0, Planets.uranus),
+    new Body("Neptune", 24622, 0, Planets.neptune),
 ]
 
 let bodies = stars.concat(planets);

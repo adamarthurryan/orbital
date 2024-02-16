@@ -16,9 +16,53 @@ function loadData () {
     });
 }
 
+//parallax is given in milli-arcseconds
+function parallaxToDistance(parallax) {
+    //distance in parsecs
+    let distanceParsec = 1/parallax;
+    let distanceKm = 1000*distanceParsec*3.086e13;
+    return distanceKm;
+}
+
+function radecToXyz({ra, dec, parallax}) {
+    //this is a naive way of calculating distance
+    let rho = parallaxToDistance(parallax);
+    return polarToCartesian(ra, dec, rho);
+}
+
+function pmradecToDxdydz({pmra, pmdec, rv}) {
+    const {x,y,z} = polarToCartesian(pmra, pmdec, rv);
+    return {dx:x, dy:z, dz:z};
+}
+
+//convert polar to cartesian coordinates
+function polarToCartesian(ra, dec, rho) {
+    let raRad = ra*Math.PI/180;
+    let decRad = dec*Math.PI/180;
+    let x = rho * Math.sin(decRad) * Math.cos(raRad);
+    let y = rho * Math.sin(decRad) * Math.sin(raRad);
+    let z = rho * Math.cos(decRad);
+    
+    return {x,y,z};
+}
+
+//convert all the keys of this object to lowercase
+function lowercaseKeys(obj) {
+    let objLower = {}
+    for (const field of Object.keys(obj)) {
+        objLower[field.toLowerCase()]=obj[field];
+    }
+    return objLower;
+}
+
 //add some fields to make it easy to work with this data
 function conditionData(data) {
-    return data;
+    return data.map(row => {
+        row =  lowercaseKeys(row)
+        Object.assign(row, radecToXyz(row));
+        Object.assign(row, pmradecToDxdydz(row));
+        return row;
+    });
 }
 
 async function getTenPcStars() {
