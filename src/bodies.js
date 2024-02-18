@@ -1,14 +1,35 @@
-import { J2000, Vector3D } from "pious-squid";
-import getTenPcStars from "./the10pcsample";
-import * as Planets from './jplKeplerian.js'
+import { Vector3D } from "./vector.js";
+import getTenPcGaia from "./the10pcsample";
+import * as Planets from './jplKeplerian.js';
+import * as THREE from 'three';
 
 class Body {
     //position is a function from time to Vector3D
-    constructor (name, radius, mass, position) {
+    constructor ({name, position}) {
         this.position = position;
         this.name = name;
-        this.radius = radius;
-        this.mass = mass;
+    }
+}
+
+class Sphere extends Body {
+    constructor ({name, radius, mass, color="#ffffff", position}) {
+        super({name, position});
+
+        this.radius=radius;
+        this.mass=mass;
+        this.color=color;
+
+        this.alwaysVisible = true;
+        this.mesh=this._createSphere();
+    }
+
+    _createSphere() {
+        let {x,y,z} = this.position(0);
+        const geo = new THREE.SphereGeometry(this.radius, 16, 16);
+        const mat = new THREE.MeshBasicMaterial( { color: this.color } );
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, y, z);
+        return mesh;
     }
 }
 
@@ -24,14 +45,17 @@ const relative = (parent, position) => (t) => parent.position(t).add(position(t)
 
 
 
-let sol = new Body("Sun", 696340, 1.989e30,  fixed(new Vector3D(0,0,0)));
+let sol = new Sphere({name: "Sun", radius:696340, mass:1.989e30, color:"#ffffff", position:fixed(new Vector3D(0,0,0))});
 
 let stars = [sol];
 
-let data = await getTenPcStars();
+let data = await getTenPcGaia();
+data = data.filter(row => row.is_star);
+console.log(data);
+
 for (const row of data) {
     const name = row.common_name;
-    const body = new Body (name, 10000, 0, fixed(new Vector3D(row.x,row.y,row.z)));
+    const body = new Sphere ({name, radius:100000, mass:0, color:"#ffffff", position:constant(new Vector3D(row.x,row.y,row.z), new Vector3D(row.dx, row.dy, row.dz))});
 
     if (name && name.startsWith("Prox"))
         console.log(row);
@@ -40,17 +64,19 @@ for (const row of data) {
 }
 
 let planets = [
-    new Body("Mercury", 2439, 0, Planets.mercury),
-    new Body("Venus", 6052, 0, Planets.venus),
-    //new Body("Earth", 6371, 0, Planets.earth),
-    new Body("Mars", 3390, 0, Planets.mars),
-    new Body("Jupiter", 69911, 0, Planets.jupiter),
-    new Body("Saturn", 58232, 0, Planets.saturn),
-    new Body("Uranus", 25362, 0, Planets.uranus),
-    new Body("Neptune", 24622, 0, Planets.neptune),
+    new Sphere({name:"Mercury", radius:2439, mass:0, color:"#cccccc",position:Planets.mercury}),
+    new Sphere({name:"Venus", radius:6052, mass:0, color:"#7fffff",position:Planets.venus}),
+    new Sphere({name:"Earth", radius:6371, mass:0, color:"#7f7fff",position:Planets.emBarycenter}),
+    new Sphere({name:"Mars", radius:3390, mass:0, color:"#ff7f7f",position:Planets.mars}),
+    new Sphere({name:"Jupiter", radius:69911, mass:0, color:"#ff7f7f",position:Planets.jupiter}),
+    new Sphere({name:"Saturn", radius:58232, mass:0, color:"#7fffff",position:Planets.saturn}),
+    new Sphere({name:"Uranus", radius:25362, mass:0, color:"#ff7fff",position:Planets.uranus}),
+    new Sphere({name:"Neptune", radius:24622, mass:0, color:"#ff7fff",position:Planets.neptune}),
 ]
 
-let bodies = stars.concat(planets);
+let bodies = [];
+bodies = bodies.concat(stars);
+bodies = bodies.concat(planets);
 
 export default bodies;
 /*

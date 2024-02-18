@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mini.css/3.0.1/mini-default.min.css">-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mini.css/3.0.1/mini-dark.min.css">
+    <link rel="stylesheet" href="index.css">
     <title>Orbital</title>
     <style>
         body { margin: 0; }
@@ -10,7 +13,20 @@
 
 </head>
 <body>
-    
+    <div class="container no-padding absolute no-scroll">
+        <div class="row">
+            <div id="threejs" class="col-sm-12"></div>    
+        </div>
+    </div>
+    <div class="container no-padding absolute no-scroll">
+        <div class="row">
+            <div id="info" class="col-sm-4">
+                <h4>Info</h4>
+                <p id="time"></p>
+                <p id="object-name"></p>
+            </div>    
+        </div>
+    </div>
     <script type="module" src="./index.js"></script>
 
 </body>
